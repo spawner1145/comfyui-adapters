@@ -53,11 +53,17 @@ def _to_pil_list(image: Optional[torch.Tensor]) -> List[Image.Image]:
 
 def _resize_for_vae(image: torch.Tensor, max_area: int) -> torch.Tensor:
     samples = image.movedim(-1, 1)
+    align = 16
     if max_area and max_area > 0:
         scale_by = math.sqrt(max_area / (samples.shape[3] * samples.shape[2]))
-        width = max(8, round(samples.shape[3] * scale_by / 8.0) * 8)
-        height = max(8, round(samples.shape[2] * scale_by / 8.0) * 8)
+        width = max(align, round(samples.shape[3] * scale_by / align) * align)
+        height = max(align, round(samples.shape[2] * scale_by / align) * align)
         samples = comfy.utils.common_upscale(samples, width, height, "area", "disabled")
+    else:
+        width = max(align, samples.shape[3] - samples.shape[3] % align)
+        height = max(align, samples.shape[2] - samples.shape[2] % align)
+        if width != samples.shape[3] or height != samples.shape[2]:
+            samples = comfy.utils.common_upscale(samples, width, height, "area", "disabled")
     return samples.movedim(1, -1)[:, :, :, :3]
 
 
