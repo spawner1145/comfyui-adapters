@@ -372,7 +372,13 @@ class CCIPTokenExtractor:
     @classmethod
     def _load(cls, checkpoint: str, device: torch.device):
         cls._prepare_ccip_models()
-        from ccip_lib.models.caformer import get_caformer
+        try:
+            from .ccip_lib.models.caformer import get_caformer
+        except ImportError:
+            node_dir = str(NODE_DIR)
+            if node_dir not in sys.path:
+                sys.path.insert(0, node_dir)
+            from ccip_lib.models.caformer import get_caformer
 
         path = Path(checkpoint)
         if path.is_dir():
