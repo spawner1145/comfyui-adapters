@@ -1,0 +1,12 @@
+# Requirements for ccip_lib (minimal)
+numpy
+pillow
+huggingface-hub
+scikit-learn
+tqdm
+# Install either onnxruntime (CPU) or onnxruntime-gpu if you have GPU
+onnxruntime>=1.15.0
+
+# Optional/advise:
+# - onnxruntime-gpu (for GPU acceleration)
+# - requests (if you need more flexible downloads)

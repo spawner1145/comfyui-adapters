@@ -1,0 +1,73 @@
+from os import PathLike
+from typing import Union, BinaryIO, List, Tuple, Optional
+
+from PIL import Image
+
+__all__ = [
+    'ImageTyping',
+    'load_image',
+    'MultiImagesTyping',
+    'load_images',
+    'add_background_for_rgba',
+    'has_alpha_channel',
+]
+
+
+def _is_readable(obj):
+    return hasattr(obj, 'read') and hasattr(obj, 'seek')
+
+
+ImageTyping = Union[str, PathLike, bytes, bytearray, BinaryIO, Image.Image]
+MultiImagesTyping = Union[ImageTyping, List[ImageTyping], Tuple[ImageTyping, ...]]
+
+
+def has_alpha_channel(image: Image.Image) -> bool:
+    mode = image.mode
+    if mode in ('RGBA', 'LA', 'PA'):
+        return True
+    if getattr(image, 'palette', None):
+        try:
+            image.palette.getcolor((0, 0, 0, 0))
+            return True
+        except Exception:
+            pass
+    return 'transparency' in image.info
+
+
+def load_image(image: ImageTyping, mode=None, force_background: Optional[str] = 'white'):
+    """
+    Minimal loader: supports file paths, bytes, file-like objects and PIL.Image.
+    Does NOT perform http/blob downloads to avoid external dependencies.
+    """
+    if isinstance(image, (str, PathLike, bytes, bytearray)) or _is_readable(image):
+        image = Image.open(image)
+    elif isinstance(image, Image.Image):
+        pass
+    else:
+        raise TypeError(f'Unknown image type - {image!r}.')
+
+    if has_alpha_channel(image) and force_background is not None:
+        image = add_background_for_rgba(image, force_background)
+
+    if mode is not None and image.mode != mode:
+        image = image.convert(mode)
+
+    return image
+
+
+def load_images(images: MultiImagesTyping, mode=None, force_background: Optional[str] = 'white') -> List[Image.Image]:
+    if not isinstance(images, (list, tuple)):
+        images = [images]
+    return [load_image(item, mode, force_background) for item in images]
+
+
+def add_background_for_rgba(image: ImageTyping, background: str = 'white'):
+    image = load_image(image, force_background=None, mode=None)
+    try:
+        ret_image = Image.new('RGBA', image.size, background)
+        ret_image.paste(image, (0, 0), mask=image)
+    except Exception:
+        ret_image = image
+    if ret_image.mode != 'RGB':
+        ret_image = ret_image.convert('RGB')
+    return ret_image
