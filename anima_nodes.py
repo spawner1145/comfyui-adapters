@@ -612,8 +612,6 @@ class AnimaMultiImageEditConditioning:
         latents = []
         images = list(references or [])
         images.extend([image for image in (image1, image2, image3, image4) if image is not None])
-        if not images:
-            raise ValueError("Anima Multi Image Edit Conditioning requires at least one reference image.")
         for image in images:
             if image is not None:
                 latents.append(vae.encode(_resize_for_vae(image, reference_max_area)))
@@ -711,7 +709,7 @@ class AnimaCCIPAdapterConditioning:
         for image in tensors:
             images.extend(_to_pil_list(image))
         if not images:
-            raise ValueError("Anima CCIP Adapter Conditioning requires at least one reference image.")
+            return (conditioning,)
         embeds = extractor.extract(images, dtype=torch.bfloat16)
         return (node_helpers.conditioning_set_values(conditioning, {"anima_ip_adapter_embeds": embeds}),)
 
